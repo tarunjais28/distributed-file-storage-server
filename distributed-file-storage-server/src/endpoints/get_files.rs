@@ -2,10 +2,10 @@ use super::*;
 
 // API to retrieve file metadata
 #[get("/files")]
-pub async fn get_files(pool: web::Data<DbPool>) -> impl Responder {
-    let mut conn = pool.get().unwrap();
+pub async fn get_files(pool: web::Data<DbPool>) -> Result<HttpResponse, CustomError> {
+    let mut conn = pool.get()?;
     // Query DB to fetch file metadata (pseudo code)
-    let files: Vec<FileMetadata> = files::table.load(&mut conn).unwrap();
+    let files: Vec<FileMetadata> = files::table.load(&mut conn)?;
 
-    HttpResponse::Ok().json(files)
+    Ok(HttpResponse::Ok().json(files))
 }

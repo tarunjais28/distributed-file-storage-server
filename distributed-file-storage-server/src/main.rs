@@ -1,24 +1,27 @@
-use crate::{db::*, endpoints::*, schema::*, structs::*};
-use actix_multipart::Multipart;
-use actix_web::{get, middleware, post, web, App, HttpResponse, HttpServer, Responder};
+use crate::{db::*, endpoints::*, error::*, helper::*, schema::*, structs::*};
+use actix_multipart::{Multipart, MultipartError};
+use actix_web::{get, middleware, post, web, App, HttpResponse, HttpServer, ResponseError};
 use diesel::{
     prelude::*,
     r2d2::{self, ConnectionManager},
+    result::Error as DieselError,
 };
-use futures::{StreamExt, TryStreamExt};
+use futures::{channel::mpsc::SendError, StreamExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
 use std::{
-    env,
+    env, fmt,
     fs::File,
-    io::{self, Write},
+    io::{self, Error as StdError, Write},
     path::Path,
-    sync::mpsc::channel,
+    sync::mpsc::{channel, RecvError},
     thread,
 };
 use uuid::Uuid;
 
 mod db;
 mod endpoints;
+mod error;
+mod helper;
 mod schema;
 mod structs;
 
@@ -36,7 +39,7 @@ async fn main() -> io::Result<()> {
     let con_str: &str = &args[2];
 
     // Establish DB Pool
-    let pool = establish_db_pool(con_str);
+    let pool = establish_db_pool(con_str)?;
     println!("Starting server at: {}", &host_url);
 
     let data = web::Data::new(pool);
