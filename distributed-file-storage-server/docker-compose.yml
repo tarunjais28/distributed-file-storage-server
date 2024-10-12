@@ -1,0 +1,30 @@
+version: '3'
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - "./../downloads:/tmp" 
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgres://postgres:password@db:5432/app_db
+      - HOST_ADDR=0.0.0.0:8080
+    networks:
+      - backend
+    entrypoint: "sh -c '/usr/local/bin/migrate.sh && /usr/local/bin/distributed-file-storage-server'"
+
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: app_db
+    networks:
+      - backend
+    ports:
+      - "5432:5432"
+
+networks:
+  backend:

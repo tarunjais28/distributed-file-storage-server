@@ -7,12 +7,13 @@ use diesel::{
     result::Error as DieselError,
 };
 use futures::{channel::mpsc::SendError, StreamExt, TryStreamExt};
+use log::info;
 use serde::{Deserialize, Serialize};
 use std::{
     env, fmt,
     fs::File,
     io::{self, Error as StdError, Write},
-    path::Path,
+    path::{Path, PathBuf},
     sync::mpsc::{channel, RecvError},
     thread,
 };
@@ -30,17 +31,15 @@ type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
 
 #[actix_web::main]
 async fn main() -> io::Result<()> {
-    std::env::set_var("RUST_LOG", "actix_web=info");
+    std::env::set_var("RUST_LOG", "info");
     env_logger::init();
 
-    // Read host usr from .env file
-    let args: Vec<String> = env::args().collect();
-    let host_url: &str = &args[1];
-    let con_str: &str = &args[2];
+    // Get database URL from environment variable
+    let con_str = env::var("DATABASE_URL").expect("DATABASE_URL environment variable not set");
+    let host_addr = env::var("HOST_ADDR").expect("HOST_ADDR environment variable not set");
 
     // Establish DB Pool
-    let pool = establish_db_pool(con_str)?;
-    println!("Starting server at: {}", &host_url);
+    let pool = establish_db_pool(&con_str)?;
 
     let data = web::Data::new(pool);
     HttpServer::new(move || {
@@ -51,7 +50,7 @@ async fn main() -> io::Result<()> {
             .service(get_files)
             .service(download_file)
     })
-    .bind(host_url)?
+    .bind(&host_addr)?
     .run()
     .await
 }
