@@ -1,14 +1,12 @@
-use diesel::{
-    pg::PgConnection,
-    r2d2::{self, ConnectionManager},
-};
+use super::*;
 
-use crate::CustomError;
-type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
-
+// Function to establish a connection pool to the database
 pub fn establish_db_pool(con_str: &str) -> Result<DbPool, CustomError> {
-    // Setup Connection Manager
+    // Setup the connection manager for PostgreSQL using the provided connection string
     let conection_manager = ConnectionManager::<PgConnection>::new(con_str);
-    // Creating DB Pool
+
+    // Create a connection pool using the connection manager
+    // r2d2 is used to manage database connections efficiently, pooling them for reuse
+    // The builder is configured to create the pool, and the pool is returned if successful
     Ok(r2d2::Pool::builder().build(conection_manager)?)
 }
